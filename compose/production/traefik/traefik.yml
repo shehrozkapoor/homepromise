@@ -28,7 +28,7 @@ entryPoints:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: '{{env "HOST_EMAIL"}}'
+      email: 'contact@valueans.com'
       storage: /etc/traefik/acme/acme.json
       httpChallenge:
         entryPoint: web
@@ -56,14 +56,6 @@ http:
       tls:
         certResolver: letsencrypt
 
-    flower-secure-router:
-      rule: 'Host(`{{env "HOSTNAME"}}`)'
-      entryPoints:
-        - flower
-      service: flower
-      tls:
-        certResolver: letsencrypt
-
   middlewares:
     csrf:
       headers:
@@ -79,11 +71,6 @@ http:
       loadBalancer:
         servers:
           - url: http://frontend:3000
-
-    # flower:
-    #   loadBalancer:
-    #     servers:
-    #       - url: http://flower:5555
 
 providers:
   file:
