@@ -1,0 +1,13 @@
+Django
+django-environ
+gunicorn
+psycopg2
+requests
+djangorestframework
+cffi
+cryptography
+pathlib
+pycparser
+PyJWT
+whitenoise
+django-cors-headers

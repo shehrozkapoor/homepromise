@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  traefik:
+    build:
+      context: .
+      dockerfile: ./compose/production/traefik/Dockerfile
+    image: my_awesome_project_production_traefik
+    depends_on:
+      - web
+      - frontend
+    volumes:
+      - production_traefik:/etc/traefik/acme
+    ports:
+      - '0.0.0.0:80:80'
+      - '0.0.0.0:443:443'
+      - '0.0.0.0:5555:5555'
+      - '0.0.0.0:8080:8080'
+    env_file:
+      - ./.env
+
+  whoami:
+    image: "traefik/whoami"
+    container_name: "simple-service"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.${HOSTNAME}`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=letsencrypt"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./compose/production/frontend/Dockerfile
+    volumes:
+      - .:/frontend
+  web:
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    command: /start
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+  db:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: homepromise_postgres
+    volumes:
+      - homepromise_postgres_data:/var/lib/postgresql/data:Z
+      - homepromise_postgres_data_backups:/backups:z
+    env_file:
+      - ./.env
+
+  # redis:
+  #   image: redis:latest
+
+  # celery_worker:
+  #   build:
+  #     context: .
+  #     dockerfile: ./compose/production/django/Dockerfile
+  #   image: homepromise_celery_worker
+  #   command: /start-celeryworker
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     - redis
+  #     - db
+
+  # celery_beat:
+  #   build:
+  #     context: .
+  #     dockerfile: ./compose/production/django/Dockerfile
+  #   image: homepromise_celery_beat
+  #   command: /start-celerybeat
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     - redis
+  #     - db
+
+  # flower:
+  #   build:
+  #     context: .
+  #     dockerfile: ./compose/production/django/Dockerfile
+  #   image: homepromise_celery_flower
+  #   command: /start-flower
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     - redis
+  #     - db
+
+volumes:
+  homepromise_postgres_data:
+  static_volume:
+  homepromise_postgres_data_backups:
+  production_traefik: {}
