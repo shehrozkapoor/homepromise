@@ -203,3 +203,10 @@ CORS_ORIGIN_ALLOW_ALL = True  # added to solve CORS
 
 # production
 BASE_URL = env.str("BASE_URL", default="redis://redis:6379")
+
+
+
+# VA_API_CREDENTIAL
+CLIENT_ID=env.str("CLIENT_ID")
+AUDIENCE=env.str("AUDIENCE")
+TOKEN_URL=env.str("TOKEN_URL")

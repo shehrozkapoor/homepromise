@@ -1,12 +1,11 @@
-from django.conf import settings
-from rest_framework.routers import DefaultRouter, SimpleRouter
-
-if settings.DEBUG:
-    router = DefaultRouter()
-else:
-    router = SimpleRouter()
-
-
+from django.urls import path
+# Make sure this import points to your views.py file
+from home.viewset import TransmitDocumentsAPIView 
 
 app_name = "api"
-urlpatterns = router.urls
+
+# We don't use a router for a single APIView.
+# Instead, we define the path directly in urlpatterns.
+urlpatterns = [
+    path("transmit-documents/", TransmitDocumentsAPIView.as_view(), name="transmit-documents"),
+]
