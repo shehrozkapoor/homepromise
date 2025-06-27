@@ -113,7 +113,7 @@ def get_access_token(client_assertion: str) -> dict:
     
     
 
-def transmit_documents(access_token: str, documents_payload: dict) -> dict:
+def transmit_documents(access_token: str, documents_payload: dict,request_type_transmit: bool) -> dict:
     """
     Calls the transmit-documents endpoint with the provided access token and payload.
 
@@ -124,7 +124,11 @@ def transmit_documents(access_token: str, documents_payload: dict) -> dict:
     Returns:
         A dictionary containing the JSON response from the API.
     """
-    api_url = 'https://sandbox-api.va.gov/services/loan-review/v1/transmit-documents'
+    if request_type_transmit:
+        api_url = f'{settings.TRANSMIT_URL}transmit-documents/'
+    else:
+        api_url = f'{settings.TRANSMIT_URL}additional-documents/'
+        
     
     # Construct the Authorization header
     headers = {
@@ -135,7 +139,6 @@ def transmit_documents(access_token: str, documents_payload: dict) -> dict:
 
     # The payload is sent as a JSON body, so we use the `json` parameter in requests
     response = requests.post(api_url, headers=headers, json=documents_payload)
-    response.raise_for_status()
     return response.json()
 
 

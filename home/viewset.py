@@ -58,7 +58,7 @@ class TransmitDocumentsAPIView(APIView):
                 "xmlULADBase64": xml_ulad_base64,
                 "filename": filename
             }
-            api_response = transmit_documents(access_token, documents_payload)
+            api_response = transmit_documents(access_token, documents_payload,True)
             
             return Response(api_response, status=status.HTTP_200_OK)
         except Exception as e:
@@ -66,5 +66,54 @@ class TransmitDocumentsAPIView(APIView):
             # In production, you would want more specific logging and error handling.
             return Response(
                 {"error": "An unexpected error occurred.", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+
+class PostAdditionalDocumentsAPIView(APIView):
+    """
+    API endpoint that receives ONLY additional documents for an existing loan.
+    """
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        # Explicitly get all expected fields from the request body
+        loan_identifier = data.get('loanIdentifier')
+        xml_ucd_base64 = data.get('xmlUCDBase64')
+        xml_ulad_base64 = data.get('xmlULADBase64')
+        additional_documents = data.get('additionalDocuments', [])
+
+        # This view expects a different payload structure
+        if not all([loan_identifier, xml_ucd_base64, xml_ulad_base64, additional_documents]):
+            return Response(
+                {"error": "Missing required fields for an additional documents submission."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            client_assertion = get_assertion_private_key()
+            token_data = get_access_token(client_assertion=client_assertion)
+            access_token = token_data.get("access_token")
+
+            if not access_token:
+                return Response(
+                    {"error": "Failed to retrieve access token from VA API."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            # Explicitly construct the payload to be sent to the API function
+            payload = {
+                "loanIdentifier": loan_identifier,
+                "xmlUCDBase64": xml_ucd_base64,
+                "xmlULADBase64": xml_ulad_base64,
+                "additionalDocuments": additional_documents
+            }
+            
+            api_response = transmit_documents(access_token, payload)
+            
+            return Response(api_response, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred during additional document submission.", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
