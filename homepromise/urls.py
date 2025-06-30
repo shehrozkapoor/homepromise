@@ -16,13 +16,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import permissions
 
-from django.contrib.sites.models import Site
-from django.contrib.auth.models import Group
-
-admin.site.unregister(Site)
-admin.site.unregister(Group)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

@@ -5,37 +5,51 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Initialize state to false. We will check localStorage after the component mounts.
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
-  // Add a loading state to prevent a flash of the wrong UI while we check localStorage.
   const [isLoading, setIsLoading] = useState(true);
 
-  // This effect runs only once on the client-side after the component has mounted.
-  // It checks if the user was previously logged in.
+  // This effect runs only once on the client-side after the component mounts.
   useEffect(() => {
-    // Since localStorage is a browser-only API, we access it in useEffect.
-    const storedAuthStatus = localStorage.getItem('isAuthenticated');
-    if (storedAuthStatus === 'true') {
-      setIsAuthenticated(true);
+    try {
+      const storedAuthData = localStorage.getItem('authData');
+      if (storedAuthData) {
+        const authData = JSON.parse(storedAuthData);
+        // Check if the current time is before the expiration time
+        if (Date.now() < authData.expiresAt) {
+          setIsAuthenticated(true);
+        } else {
+          // If expired, clear the stored data
+          localStorage.removeItem('authData');
+        }
+      }
+    } catch (error) {
+      // If there's an error parsing, clear the storage
+      console.error("Failed to parse auth data from localStorage", error);
+      localStorage.removeItem('authData');
     }
-    // We're done checking, so we can show the real UI now.
     setIsLoading(false);
   }, []); // The empty dependency array [] ensures this runs only once.
 
   const login = () => {
-    // When the user logs in, save the status to localStorage.
-    localStorage.setItem('isAuthenticated', 'true');
+    // Set the expiration time to 5 minutes (300,000 milliseconds) from now.
+    const expirationTime = Date.now() + 5 * 60 * 1000;
+    
+    const authData = {
+      isAuthenticated: true,
+      expiresAt: expirationTime,
+    };
+
+    // Store the object with the expiration time in localStorage.
+    localStorage.setItem('authData', JSON.stringify(authData));
     setIsAuthenticated(true);
   };
 
   const logout = () => {
-    // When the user logs out, remove the status from localStorage.
-    localStorage.removeItem('isAuthenticated');
+    // When the user logs out, remove the data from localStorage.
+    localStorage.removeItem('authData');
     setIsAuthenticated(false);
   };
 
-  // We provide the loading state so other components can wait until we've checked the auth status.
   const value = { isAuthenticated, login, logout, isLoading };
 
   return (

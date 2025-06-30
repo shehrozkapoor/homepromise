@@ -46,22 +46,31 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
 ]
-LOCAL_APPS = []
+LOCAL_APPS = ['users.apps.UsersConfig',]
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    "corsheaders",
+    
+    
 ]
 INSTALLED_APPS += LOCAL_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = "homepromise.urls"
@@ -173,6 +182,9 @@ REST_AUTH = {
     "REGISTER_SERIALIZER": "users.api.serializers.SignupSerializer",
 }
 
+# Custom user model
+AUTH_USER_MODEL = "users.User"
+
 
 
 
@@ -211,3 +223,5 @@ CLIENT_ID=env.str("CLIENT_ID")
 AUDIENCE=env.str("AUDIENCE")
 TOKEN_URL=env.str("TOKEN_URL")
 TRANSMIT_URL=env.str("TRANSMIT_URL")
+
+

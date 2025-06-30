@@ -11,3 +11,11 @@ pycparser
 PyJWT
 whitenoise
 django-cors-headers
+django-allauth
+django-rest-auth
+django-phonenumber-field
+django-phonenumbers
+pillow
+django-filter
+dj-rest-auth
+pyotp
