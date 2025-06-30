@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UploadCloud, X, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 // --- Configuration ---
 const API_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}transmit-documents/`;
@@ -64,6 +66,22 @@ export default function LoanSubmissionForm() {
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [submissionResponse, setSubmissionResponse] = useState(null);
+
+
+   const { isAuthenticated, isLoading } = useAuth();
+    const router = useRouter();
+
+  useEffect(() => {
+    // If the check is complete and the user is not logged in, redirect.
+    if (!isLoading && !isAuthenticated) {
+      router.push('/');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+
+  useEffect(()=>{
+    isAuthenticated??router.push('/');
+  })
 
   const handleSubmit = async (event) => {
     event.preventDefault();

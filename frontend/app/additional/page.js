@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { UploadCloud, X, CheckCircle, Loader2, FileText, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 // --- Configuration ---
 const API_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}additional-documents/`;
@@ -65,6 +67,17 @@ export default function AdditionalDocumentsPage() {
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [submissionResponse, setSubmissionResponse] = useState(null);
+
+
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    // If the check is complete and the user is not logged in, redirect.
+    if (!isLoading && !isAuthenticated) {
+      router.push('/');
+    }
+  }, [isLoading, isAuthenticated, router]);
   
   const handleAdditionalFilesSelect = (files) => {
     const newFiles = files.map(file => ({
