@@ -86,7 +86,7 @@ def get_access_token(client_assertion: str) -> dict:
         'client_assertion': client_assertion,
         'scope': 'launch system.loan-review.write',
         # The launch parameter is a Base64 encoded JSON string: {"portal_id":"TEST1234567890SERVICE"}
-        'launch': 'eyJwb3J0YWxfaWQiOiJURVNUMTIzNDU2Nzg5MFNFUlZJQ0UifQ=='
+        'launch': settings.PORTAL_ID
     }
 
     try:
