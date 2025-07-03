@@ -83,7 +83,7 @@ class PostAdditionalDocumentsAPIView(APIView):
         additional_documents = data.get('additionalDocuments', [])
 
         # This view expects a different payload structure
-        if not all([loan_identifier, xml_ucd_base64, xml_ulad_base64, additional_documents]):
+        if not all([loan_identifier, additional_documents]):
             return Response(
                 {"error": "Missing required fields for an additional documents submission."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -108,7 +108,7 @@ class PostAdditionalDocumentsAPIView(APIView):
                 "additionalDocuments": additional_documents
             }
             
-            api_response = transmit_documents(access_token, payload)
+            api_response = transmit_documents(access_token, payload,False)
             
             return Response(api_response, status=status.HTTP_200_OK)
             

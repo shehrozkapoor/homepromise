@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UploadCloud, X, CheckCircle, Loader2, FileText, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -68,12 +68,10 @@ export default function AdditionalDocumentsPage() {
   const [error, setError] = useState(null);
   const [submissionResponse, setSubmissionResponse] = useState(null);
 
-
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   
   useEffect(() => {
-    // If the check is complete and the user is not logged in, redirect.
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
@@ -83,7 +81,7 @@ export default function AdditionalDocumentsPage() {
     const newFiles = files.map(file => ({
       file,
       id: `${file.name}-${file.lastModified}`,
-      documentType: 'LR File', // Default value
+      documentType: 'LR File',
       description: ''
     }));
     setAdditionalDocuments(prev => [...prev, ...newFiles]);
@@ -99,9 +97,12 @@ export default function AdditionalDocumentsPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    // Updated validation for the new set of required fields
-    if (!loanIdentifier || !xmlUCDFile || !xmlULADFile) {
-      setError('Loan Identifier and both XML files are required.');
+    setError(null);
+
+    // --- UPDATED VALIDATION ---
+    // Now only requires a Loan Identifier and at least one file of any kind.
+    if (!loanIdentifier || (!xmlUCDFile && !xmlULADFile && additionalDocuments.length === 0)) {
+      setError('A Loan Identifier and at least one document (XML or Additional) are required.');
       setStatus('error');
       return;
     }
@@ -112,33 +113,36 @@ export default function AdditionalDocumentsPage() {
     }
 
     setStatus('submitting');
-    setError(null);
     setSubmissionResponse(null);
 
     try {
-      const base64Promises = [
-        fileToBase64(xmlUCDFile),
-        fileToBase64(xmlULADFile),
-        ...additionalDocuments.map(doc => fileToBase64(doc.file))
-      ];
-      
-      const [ucdBase64, uladBase64, ...additionalDocsBase64] = await Promise.all(base64Promises);
-      
-      const formattedAdditionalDocs = additionalDocuments.map((doc, index) => ({
-        name: doc.file.name,
-        description: doc.description || `Additional document: ${doc.file.name}`,
-        documentType: doc.documentType,
-        fileType: "PDF", // Assuming all additional docs are PDFs
-        lrFileBase64: additionalDocsBase64[index]
-      }));
-
-      // Construct the payload to match the required format
+      // --- UPDATED PAYLOAD CONSTRUCTION ---
       const payload = {
         loanIdentifier,
-        xmlUCDBase64: ucdBase64,
-        xmlULADBase64: uladBase64,
-        additionalDocuments: formattedAdditionalDocs
       };
+
+      // Conditionally add XML files if they exist
+      if (xmlUCDFile) {
+        payload.xmlUCDBase64 = await fileToBase64(xmlUCDFile);
+      }
+      if (xmlULADFile) {
+        payload.xmlULADBase64 = await fileToBase64(xmlULADFile);
+      }
+      
+      // Conditionally add additional documents if they exist
+      if (additionalDocuments.length > 0) {
+        const additionalDocsBase64 = await Promise.all(
+          additionalDocuments.map(doc => fileToBase64(doc.file))
+        );
+        
+        payload.additionalDocuments = additionalDocuments.map((doc, index) => ({
+          name: doc.file.name,
+          description: doc.description || `Additional document: ${doc.file.name}`,
+          documentType: doc.documentType,
+          fileType: "PDF",
+          lrFileBase64: additionalDocsBase64[index]
+        }));
+      }
 
       const response = await fetch(API_ENDPOINT, {
         method: 'POST',
@@ -175,24 +179,22 @@ export default function AdditionalDocumentsPage() {
         <div className="form-card">
           <Link href="/" legacyBehavior><a className="back-link">← Back to Home</a></Link>
           <h1 className="form-title">Submit Additional Documents</h1>
-          <p className="form-subtitle">Upload XML files and any additional documents for an existing loan.</p>
+          <p className="form-subtitle">Upload any additional documents for an existing loan.</p>
           
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-fields-container">
-              {/* --- Primary Fields --- */}
               <div>
                 <label htmlFor="loanIdentifier" className="input-label">Loan Identifier</label>
-                <input type="text" id="loanIdentifier" value={loanIdentifier} onChange={(e) => setLoanIdentifier(e.target.value)} className="text-input" />
+                <input type="text" id="loanIdentifier" value={loanIdentifier} onChange={(e) => setLoanIdentifier(e.target.value)} className="text-input" required/>
               </div>
               <div className="file-inputs-grid">
-                <FileInput id="xmlUCDFile" label="XML UCD File" acceptedTypes=".xml,text/xml" onFileSelect={setXmlUCDFile} selectedFile={xmlUCDFile} />
-                <FileInput id="xmlULADFile" label="XML ULAD File" acceptedTypes=".xml,text/xml" onFileSelect={setXmlULADFile} selectedFile={xmlULADFile} />
+                <FileInput id="xmlUCDFile" label="XML UCD File (Optional)" acceptedTypes=".xml,text/xml" onFileSelect={setXmlUCDFile} selectedFile={xmlUCDFile} />
+                <FileInput id="xmlULADFile" label="XML ULAD File (Optional)" acceptedTypes=".xml,text/xml" onFileSelect={setXmlULADFile} selectedFile={xmlULADFile} />
               </div>
               
-              {/* --- Additional Documents Section --- */}
               <div className="additional-docs-section">
-                <h2 className="section-title">Additional Documents</h2>
-                <FileInput id="additionalDocuments" label="Upload one or more files (PDF)" acceptedTypes=".pdf" onFileSelect={handleAdditionalFilesSelect} multiple={true} />
+                <h2 className="section-title">Additional Documents (PDF)</h2>
+                <FileInput id="additionalDocuments" label="Upload one or more files" acceptedTypes=".pdf" onFileSelect={handleAdditionalFilesSelect} multiple={true} />
                 {additionalDocuments.length > 0 && (
                   <div className="additional-docs-list">
                     {additionalDocuments.map((doc) => (
