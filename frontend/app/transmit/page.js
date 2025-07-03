@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { UploadCloud, X, CheckCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, X, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // --- Configuration ---
 const API_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}transmit-documents/`;
+const MAX_FILE_SIZE_BYTES = 0.5 * 1024 * 1024; // 65 MB
 
 // Helper function to convert a file to a Base64 string
 const fileToBase64 = (file) => {
@@ -42,7 +43,8 @@ const FileInput = ({ id, label, acceptedTypes, onFileSelect, selectedFile }) => 
           {selectedFile ? (
             <div className="file-input-selected-text">
               <span className="file-name">{selectedFile.name}</span>
-              <p className="file-size">({(selectedFile.size / 1024).toFixed(2)} KB)</p>
+              {/* Display size in MB for clarity */}
+              <p className="file-size">({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>
             </div>
           ) : (
             <span className="file-input-prompt">
@@ -65,26 +67,40 @@ export default function LoanSubmissionForm() {
   
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const [sizeError, setSizeError] = useState('');
   const [submissionResponse, setSubmissionResponse] = useState(null);
 
-
-   const { isAuthenticated, isLoading } = useAuth();
-    const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    // If the check is complete and the user is not logged in, redirect.
+    // If the auth check is complete and the user is not logged in, redirect.
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
   }, [isLoading, isAuthenticated, router]);
 
-
-  useEffect(()=>{
-    isAuthenticated??router.push('/');
-  })
+  // Handler specifically for the main package file to check its size.
+  const handlePackageFileSelect = (file) => {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        setSizeError('File exceeds 65MB limit. Please split the file and use the "Additional Documents" page for overflow parts.');
+        setLoanReviewPackageFile(null); // Clear the invalid file selection
+    } else {
+        setSizeError(''); // Clear any previous error
+        setLoanReviewPackageFile(file);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError(null); // Clear previous submission errors
+
+    // Prevent submission if there's a file size error
+    if (sizeError) {
+        setError('Please resolve the file size error before submitting.');
+        return;
+    }
+
     if (!loanIdentifier || !loanReviewPackageFile || !xmlUCDFile || !xmlULADFile) {
       setError('All primary fields are required.');
       setStatus('error');
@@ -97,7 +113,6 @@ export default function LoanSubmissionForm() {
     }
 
     setStatus('submitting');
-    setError(null);
     setSubmissionResponse(null);
 
     try {
@@ -115,7 +130,6 @@ export default function LoanSubmissionForm() {
         xmlUCDBase64: ucdBase64,
         xmlULADBase64: uladBase64,
         filename: loanReviewPackageFile.name,
-        // The additionalDocuments field is no longer sent from this form
       };
 
       const response = await fetch(API_ENDPOINT, {
@@ -144,8 +158,17 @@ export default function LoanSubmissionForm() {
     setXmlULADFile(null);
     setStatus('idle');
     setError(null);
+    setSizeError(''); // Reset the size error as well
     setSubmissionResponse(null);
   };
+
+  if (isLoading || !isAuthenticated) {
+    return (
+        <div className="form-page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Loader2 className="spinner" size={32} />
+        </div>
+    );
+  }
 
   return (
     <div className="form-page-container">
@@ -163,7 +186,15 @@ export default function LoanSubmissionForm() {
                 <input type="text" id="loanIdentifier" value={loanIdentifier} onChange={(e) => setLoanIdentifier(e.target.value)} className="text-input" />
               </div>
               <div className="file-inputs-grid">
-                <FileInput id="loanReviewPackageFile" label="Loan Review Package (PDF)" acceptedTypes=".pdf" onFileSelect={setLoanReviewPackageFile} selectedFile={loanReviewPackageFile} />
+                <div>
+                    <FileInput id="loanReviewPackageFile" label="Loan Review Package (PDF)" acceptedTypes=".pdf" onFileSelect={handlePackageFileSelect} selectedFile={loanReviewPackageFile} />
+                    {sizeError && (
+                        <div className="error-message" style={{ marginTop: '0.5rem' }}>
+                            <AlertCircle size={16} />
+                            <span>{sizeError}</span>
+                        </div>
+                    )}
+                </div>
                 <div className="file-inputs-column">
                   <FileInput id="xmlUCDFile" label="XML UCD File" acceptedTypes=".xml,text/xml" onFileSelect={setXmlUCDFile} selectedFile={xmlUCDFile} />
                   <FileInput id="xmlULADFile" label="XML ULAD File" acceptedTypes=".xml,text/xml" onFileSelect={setXmlULADFile} selectedFile={xmlULADFile} />
@@ -173,13 +204,10 @@ export default function LoanSubmissionForm() {
                 <label htmlFor="filename" className="input-label">Filename (from PDF)</label>
                 <input type="text" id="filename" value={loanReviewPackageFile ? loanReviewPackageFile.name : ''} readOnly className="text-input read-only" />
               </div>
-              
-              {/* --- Additional Documents Section Removed --- */}
-
             </div>
 
             <div className="submit-button-wrapper">
-              <button type="submit" disabled={status === 'submitting'} className="submit-button">
+              <button type="submit" disabled={status === 'submitting' || !!sizeError} className="submit-button">
                 {status === 'submitting' && <Loader2 className="spinner" />}
                 {status === 'submitting' ? 'Transmitting...' : 'Transmit Documents'}
               </button>
@@ -188,7 +216,7 @@ export default function LoanSubmissionForm() {
 
           {/* --- Status Messages --- */}
           <div className="status-message-wrapper">
-            {status === 'error' && (
+            {status === 'error' && status !== 'submitting' && (
               <div className="status-box error-box"><X /><span>{error}</span></div>
             )}
             {status === 'success' && (
