@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 
 // --- Configuration ---
 const API_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}transmit-documents/`;
-const MAX_FILE_SIZE_BYTES = 0.5 * 1024 * 1024; // 65 MB
+const MAX_FILE_SIZE_BYTES = 65 * 1024 * 1024; // 65 MB
 
 // Helper function to convert a file to a Base64 string
 const fileToBase64 = (file) => {
