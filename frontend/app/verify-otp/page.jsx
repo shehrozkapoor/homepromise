@@ -42,12 +42,6 @@ export default function TwoFactorAuthPage() {
     }
   };
 
-  // Send an OTP code when the page first loads
-  useEffect(() => {
-    if (authToken) {
-        handleResendCode();
-    }
-  }, [authToken]);
 
   const handleChange = (element, index) => {
     if (isNaN(element.value)) return;
