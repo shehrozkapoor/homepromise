@@ -19,7 +19,7 @@ def sendOtpEmail(user):
     send_mail(
         "OTP verification",
         f"Your Verification OTP is {otp}",
-        settings.EMAIL_HOST_USER,
+        settings.DEFAULT_FROM_EMAIL,
         [user.email],
         fail_silently=False,
     )

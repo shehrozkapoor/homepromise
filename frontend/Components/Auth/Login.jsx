@@ -47,7 +47,7 @@ export default function Login() {
       // On successful login, dj-rest-auth returns a token in the 'key' field.
       if (result.token) {
         login(result.token); // Pass the token to the auth context to be stored
-        router.push('/'); // Redirect to the homepage after successful login
+        router.push('/verify-otp'); // Redirect to the homepage after successful login
       } else {
         throw new Error('Login successful, but no authentication token was received.');
       }

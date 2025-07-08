@@ -91,14 +91,14 @@ class LoginViewSet(ViewSet):
         user = serializer.validated_data["user"]
         token, created = Token.objects.get_or_create(user=user)
         user_serializer = UserSerializer(user)
-        print("user.is_verified",user.is_verified)
+        sendOtpEmail(user)
+        
         if user.is_verified == True:
             return Response(
                 {"token": token.key, "user": user_serializer.data},
                 status=status.HTTP_200_OK,
             )
 
-        # sendOtpEmail(user)
         data = {
             "token": token.key,
             "user": user_serializer.data,

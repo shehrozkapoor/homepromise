@@ -190,7 +190,6 @@ AUTH_USER_MODEL = "users.User"
 
 
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # custom settings
 
@@ -226,3 +225,10 @@ TRANSMIT_URL=env.str("TRANSMIT_URL")
 PORTAL_ID=env.str("PORTAL_ID")
 
 
+
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = env.str("SENDGRID_PASSWORD", "")
+DEFAULT_FROM_EMAIL = "jgrace@homepromise.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True

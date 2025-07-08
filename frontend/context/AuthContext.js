@@ -5,52 +5,64 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const [authToken, setAuthToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // This effect runs only once on the client-side after the component mounts.
+  // On initial load, check localStorage for a fully authenticated session
   useEffect(() => {
     try {
-      const storedAuthData = localStorage.getItem('authData');
-      if (storedAuthData) {
-        const authData = JSON.parse(storedAuthData);
-        // Check if the current time is before the expiration time
-        if (Date.now() < authData.expiresAt) {
+      const data = localStorage.getItem('authData');
+      if (data) {
+        const authData = JSON.parse(data);
+        // Only consider the user logged in if they have a token AND are verified
+        if (authData.token && authData.isAuthenticated) {
+          setAuthToken(authData.token);
           setIsAuthenticated(true);
-        } else {
-          // If expired, clear the stored data
-          localStorage.removeItem('authData');
+        } else if (authData.token) {
+          // If they have a token but aren't verified (e.g., page refresh during 2FA)
+          setAuthToken(authData.token);
         }
       }
-    } catch (error) {
-      // If there's an error parsing, clear the storage
-      console.error("Failed to parse auth data from localStorage", error);
-      localStorage.removeItem('authData');
+    } catch (e) { 
+      console.error("Could not parse auth data from localStorage", e);
+      localStorage.removeItem('authData'); // Clear corrupted data
     }
     setIsLoading(false);
-  }, []); // The empty dependency array [] ensures this runs only once.
+  }, []);
 
-  const login = () => {
-    // Set the expiration time to 5 minutes (300,000 milliseconds) from now.
-    const expirationTime = Date.now() + 5 * 60 * 1000;
-    
-    const authData = {
-      isAuthenticated: true,
-      expiresAt: expirationTime,
-    };
-
-    // Store the object with the expiration time in localStorage.
+  // Step 1: Called by Login page. Stores the token but sets isAuthenticated to false.
+  const login = (token) => {
+    const authData = { isAuthenticated: false, token: token };
     localStorage.setItem('authData', JSON.stringify(authData));
-    setIsAuthenticated(true);
-  };
-
-  const logout = () => {
-    // When the user logs out, remove the data from localStorage.
-    localStorage.removeItem('authData');
+    setAuthToken(token);
     setIsAuthenticated(false);
   };
 
-  const value = { isAuthenticated, login, logout, isLoading };
+  // Step 2: Called by 2FA page after successful OTP check. Finalizes the login.
+  const verify = () => {
+    const data = localStorage.getItem('authData');
+    if (data) {
+      try {
+        const authData = JSON.parse(data);
+        authData.isAuthenticated = true; // Set verified flag
+        localStorage.setItem('authData', JSON.stringify(authData));
+        setIsAuthenticated(true); // Update the live state
+      } catch (e) {
+        console.error("Could not update auth data", e);
+      }
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authData');
+    setAuthToken(null);
+    setIsAuthenticated(false);
+  };
+
+  // The value provided to the context now correctly uses the state variables.
+  // This ensures that any component using the context will re-render when the state changes.
+  const value = { isAuthenticated, authToken, login, logout, verify, isLoading };
 
   return (
     <AuthContext.Provider value={value}>
@@ -59,7 +71,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// This custom hook remains the same.
 export function useAuth() {
   return useContext(AuthContext);
 }
