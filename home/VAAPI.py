@@ -8,7 +8,7 @@ import json
 
 
 
-def get_assertion_private_key(client_id= settings.CLIENT_ID, key_path="sandbox_private.pem", audience=settings.AUDIENCE) -> str:
+def get_assertion_private_key(client_id= settings.CLIENT_ID, key_path="private.pem", audience=settings.AUDIENCE) -> str:
     """
     Generates a signed JWT assertion using a private key, mirroring the JS logic.
 
